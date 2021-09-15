@@ -1,0 +1,12 @@
+COPY etl.raw_timestamp
+FROM 'D:\leapfrog\day_2\data\_timestamp\_timesheet_2021_05_23.csv'
+DELIMITER ','
+CSV HEADER;
+COPY etl.raw_timestamp
+FROM 'D:\leapfrog\day_2\data\_timestamp\_timesheet_2021_06_23.csv'
+DELIMITER ','
+CSV HEADER;
+COPY etl.raw_timestamp
+FROM 'D:\leapfrog\day_2\data\_timestamp\_timesheet_2021_07_24.csv'
+DELIMITER ','
+CSV HEADER;
