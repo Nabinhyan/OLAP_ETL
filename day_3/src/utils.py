@@ -16,18 +16,6 @@ def sql_path(path):
         sql = ' '.join(sql)
     return sql
 
-def archive_create(select_query, archive_sql, filename):
-    conn = connect()
-    cursor = conn.cursor()
-    sql_fetch = sql_path(select_query)
-    sql_ins = sql_path(archive_sql)
-    cursor.execute(sql_fetch)
-    data = cursor.fetchall()
-    for row in data:
-        cursor.execute(sql_ins,(row, filename))
-    conn.commit()
-    conn.close()
-
 def extract_raw_employee(filepath, sqlpath):
     conn = connect()
     cursor = conn.cursor()
