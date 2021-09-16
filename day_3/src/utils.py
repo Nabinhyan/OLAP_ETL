@@ -44,3 +44,4 @@ def extract_raw_employee(filepath, sqlpath):
                 i+=1
     conn.commit()
     conn.close()   
+    
