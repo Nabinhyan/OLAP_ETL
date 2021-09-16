@@ -37,3 +37,5 @@ if __name__ == '__main__':
     filepath = 'day_3\data\_timestamp\_timesheet_2021_05_23.csv'
     sqlpath = 'day_3\src\sql\queries\_raw_timestamp.sql'    
     archive_call(filepath, sqlpath)
+    
+    
