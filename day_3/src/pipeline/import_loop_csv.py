@@ -11,3 +11,4 @@ if __name__ == '__main__':
     extract_raw_employee('day_2\data\_timestamp\_timesheet_2021_05_23.csv', 'day_2\src\sql\queries\loop_raw_timestamp.sql')
     extract_raw_employee('day_2\data\_timestamp\_timesheet_2021_06_23.csv', 'day_2\src\sql\queries\loop_raw_timestamp.sql')
     extract_raw_employee('day_2\data\_timestamp\_timesheet_2021_07_24.csv', 'day_2\src\sql\queries\loop_raw_timestamp.sql')
+    
