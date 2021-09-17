@@ -1,40 +1,76 @@
-##Setting up the setup for managing the relative path
+## Setting up the setup for managing the relative path
 Initially for  importing the packages using relative path I have install the setup.py file using following command
     pip install -e .
 This will find all the packages and setup it to the project
 
-##Establishing Connection:
+## Establishing Connection:
 For establishing the connection with postgresql database we used the psycopg2 package. 
 
-##utils package
+## Utils package
 The utils package includes the codes which might get repeatedly called during the execution of program. It includes:
-    ###json_file_ins(path)
-    This fuction will create engine and store the data from json file to database.
-    ###connect()
+### connect() ###
     This function will connect to the postgres database.
-    ###sql_path(path)
+### sql_path(path)
     This fuction will read the sql from the sql path and return it to the program.
-    ###extract_raw_employee(filepath, sqlpath)
-    This function will extract the data from csv file and call the insert query file to insert the data. 
 
-##Creating the schema:
-For creating the schema I have maintained the schema folder which includes the sql file to create the schema and tables seperatly. 
-The schema will be created if the defined schema name is not exists in the database.
-Similarly, for creating the tables I have declared IF NOT EXISTS condition which specifies that the table will be created if there doesnot exists the named table in query. While creating the tables, specifically for this assignment we used the DATATYPE VARCHAR(200). This is because, till the time we have not done any data validation and in future, the datatype of any field may get changed specifically in DATE datatyp. Thus we will used VARCHAR(200).
+## Creating the schema:
+Here I have maintained all the temporary tables for each attributes needed. `raw_employee, raw_timestamp, dim_department,  temporary_punch_detail, temporary__hours_worked, etl.temporary_attendance, temporary_break_taken, temporary_break_hour, temporary_charge_status, temporary_charge_hour, temporary_on_call_status, temporary_on_call_hour, temporary_num_teammates_absent`.
+### raw_employee, raw_timestamp ###
+These table includes the raw data directly from raw files
+### dim_department ###
+This table includes the index to distinct department along with department name and department id.
+### temporary_punch_detail ###
+In this table I have place the `employee id, shift_start_time by extracting the minium time from punch_in_time , shift_end_time by extracting the maximum time from punch_out_time, shift_date using the case statement` as:  
+```
+SELECT employee_id,
+           d.id,
+           MIN(punch_in_time::TIMESTAMP::TIME)  AS shift_start_time, #extacting time
+           MAX(punch_out_time::TIMESTAMP::TIME) AS shift_end_time, #extacting time
+           CAST(punch_apply_date AS DATE) AS shift_date,
+           CASE
+               WHEN punch_in_time::TIMESTAMP::TIME BETWEEN '05:00' AND '11:00'::TIME THEN 'Morning'
+               WHEN punch_in_time::TIMESTAMP::TIME >= '12:00'::TIME THEN 'Evening'
+               ELSE NULL END AS shift_type
+    FROM etl.raw_timestamp e LEFT JOIN etl.dim_department d on e.cost_center = d.client_department_id
+    group by employee_id, punch_apply_date, employee_id, punch_out_time, punch_in_time, d.id
+```
+Here the punch_apply_date has been cast to DATE format which was previously in VARCHAR format.
 
-    While creating the schema, I have passed the list of path of the sql file to be created along with the file name so that we can create the sql file using loop. 
-
-##Importing data from json file:
-To import the data from json file, we have used the pandas library to read the json file using read_json() function of pandas. The sqlalchemy package is used to create the database engine. The inbuilt function to_sql() is used to store the json file to postgres database. On using pandas library to store json file data to database, we don't need to create the table previously. The engine itself will create table and store data from json file to database.
-
-##Importing data from xml file:
-To import the data from XML files, I have used xml.etree.ElementTree inbuilt package. I have basically used the concept of scrapping. 
-Before inserting the data into database I have cleared the previously stored data.
-The findall() function of the used package has been used, which will find all the keywords in the xml file. Then I have used the find() to find the attributes of table in xml file. The use of findall('Employee') and find(attribute_name) will find all the data inside the 'Employee' tag and the attribute_name tag. 
-The extracted data is passed to sql file import_raw_employee.sql which contains the insert query. 
-
-##Importing data from CSV file using Loop method:
-To import and insert data from csv file to database, I have previously deleted the pre-existing data. Then I have read the data in loop. The extract_raw_employee(filepath, sqlpath) of utils.py will connect the database, read the data from csv file and pass the data to sql query file named loop_raw_employee.sql. In this function I have implemented the increment by 1 if the index value is 0. This is to avoid the insertion of header row of csv file to database. I have called the extract_raw_employee(filepath, sqlpath) function for 3 times to store the data of 3 CSV file. Meanwhile it can be done by creating the list of path of CSV file and running it into loop.
-
-##Importing data from CSV file using COPY command:
-For the bulk insertion of data into database using csv file I have used COPY command. This will copy the data from CSV file and store it into database in bulk. The CSV HEADER will eliminate the header row of csv file. I have used the regex to seperate the list of sql queries into list. Similarly to previous steps, previously i have deleted all the record in database and only then I have read the query to insert the data inorder to eradicate the data redundancy.
+### temporary_hours_worked ###
+Here I have cast the hours_worked attribute to float and made the aggregration sum when the `paycode = 'WRK'` grouping by employee_id, punch_apply_date, hours_worked.
+```
+SELECT
+        SUM(CAST(hours_worked AS FLOAT)) AS hours_worked
+    FROM etl.raw_timestamp
+    WHERE paycode = 'WRK'
+    GROUP BY employee_id, punch_apply_date, hours_worked
+```
+### temporary_attendance ###
+Here I have primarily grouped the table by employee_id, punch_apply_date and sum the hours_worked after casting it to float by selecting the hours_worked having paycode to `'WRK' and 'CHARGE'`. Here I have maintained the threshold that if the sum of the hours_worked having pay code to 'wrk' and 'charge' is greater than 2.0 raise the attendance flag to 'T'else the attendance flag till set to 'F'.
+```
+SELECT CAST(CASE
+                    WHEN SUM(CAST(hours_worked AS FLOAT)) > '2.0' THEN 'T'
+                    ELSE 'F' END AS BOOLEAN) AS attendance
+    FROM etl.raw_timestamp
+    WHERE paycode IN ('WRK', 'CHARGE')
+    GROUP BY employee_id, punch_apply_date
+```
+### temporary_break_taken ###
+Here after grouping the table by employee_id, punch_apply_date with paycode = 'BREAK', I have cast the hours_worked to float and added by using aggegreation function SUM(). If the sum value >0.0 then it indicates that employee with employee_id has taken break on that date. Thus the flag will set to T else the flag will set to F.
+```
+SELECT
+       CAST(CASE WHEN SUM(CAST(hours_worked AS FLOAT)) > '0.0' THEN 'T'
+        ELSE 'F' END AS BOOLEAN) AS has_taken_break
+    FROM etl.raw_timestamp WHERE paycode = 'BREAK' GROUP BY employee_id, punch_apply_date
+```
+This is as same as `temporary_hours_worked`. Here only difference is that, the paycode with BRAK are only selected and made the sum.
+Similar to `temporary_break_taken; temporary_charge_status, temporary_on_call_status` and `temporary_hours_worked; temporary_charge_hour, temporary_on_call_hour` only by canging the where clause to 'CHARGE', 'ON_CALL' respectively.
+### temporary_num_teammates_absent ###
+Here, after grouping the table by cost_center, paycode, punch_apply_date the rows with paycode = 'ABSENT' are selected and count it to get the number of teammates absent in certain department on the date. 
+```
+SELECT
+           COUNT(paycode) AS num_teammates_absent
+    FROM etl.raw_timestamp
+    WHERE paycode = 'ABSENT'
+    GROUP BY cost_center, paycode, punch_apply_date
+```
