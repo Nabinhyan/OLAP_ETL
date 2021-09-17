@@ -1,1 +1,0 @@
-DELETE FROM etl.raw_employee;
