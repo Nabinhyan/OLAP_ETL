@@ -8,9 +8,9 @@ def connect():
     port = 5432
     )
 
-
 def sql_path(path):
     with open(path, 'r') as create_schema:
         sql = create_schema.readlines()
         sql = ' '.join(sql)
     return sql
+
