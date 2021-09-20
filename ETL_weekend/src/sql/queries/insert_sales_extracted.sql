@@ -1,6 +1,7 @@
 INSERT INTO sales.extracted_sales(bill_date, product_id, customer_id, qty, bill_location, price, gross_price, tax_amt, discount_pc, discount_amt, net_bill_amt, created_by)
 SELECT
-    bill_date,
+    (CASE WHEN bill_date = '2017-02-30 11:00:00' THEN '2017-2-28'
+        ELSE bill_date END)::TIMESTAMP::DATE,
     CAST(product_id AS INT) AS product_id,
     CAST(customer AS INT) AS customer_id,
     CAST(qty AS INT) AS qty,
@@ -12,17 +13,16 @@ SELECT
     CAST(discount_amt AS FLOAT) discount_amt,
     CAST(net_bill_amt AS FLOAT) AS net_bill_amt,
     created_by
-FROM sales.raw_sales_dump 
-GROUP BY customer,
-        product_id,
-        qty,
-        price,
-        gross_price,
-        tax_amt,
-        discount_pc,
-        discount_amt,
-        net_bill_amt,
-        bill_location,
-        created_by,
-        bill_date
+FROM sales.raw_sales_dump GROUP BY customer,
+                                   product_id,
+                                   qty,
+                                   price,
+                                   gross_price,
+                                   tax_amt,
+                                   discount_pc,
+                                   discount_amt,
+                                   net_bill_amt,
+                                   bill_location,
+                                   created_by,
+                                   bill_date
 ;
