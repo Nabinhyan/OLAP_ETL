@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS timesheet.fact_timesheet(
+    employee_id INT,
+    work_date DATE,
+    department_id INT,
+    hours_worked FLOAT,
+    shift_type_id INT,
+    punch_in_time TIME,
+    punch_out_time TIME,
+    attendance VARCHAR(255),
+    work_code VARCHAR(255),
+    has_taken_break VARCHAR(255),
+    break_hour FLOAT,
+    was_charge VARCHAR(255),
+    charge_hour FLOAT,
+    was_on_call VARCHAR(255),
+    on_call_hour FLOAT,
+    is_weekend VARCHAR(255),
+    num_teammates_absent INT,
+    FOREIGN KEY (employee_id) REFERENCES timesheet.fact_employee(employee_id),
+    FOREIGN KEY (shift_type_id) REFERENCES timesheet.dim_shift_type(id)
+);
