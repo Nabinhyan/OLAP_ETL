@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS sales.extracted_sales(
     id SERIAL PRIMARY KEY,
-    bill_date VARCHAR(255),
+    bill_date DATE,
     product_id INT,
     customer_id INT,
     qty INT,
